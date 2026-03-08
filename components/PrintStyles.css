@@ -1,0 +1,92 @@
+@media print {
+    @page {
+        size: A4;
+        margin: 10mm;
+    }
+
+    body {
+        background: white;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Hide everything by default during print */
+    body>* {
+        display: none !important;
+    }
+
+    /* Only show the report container */
+    #printable-report,
+    #printable-report * {
+        display: block;
+        visibility: visible;
+    }
+
+    /* But we need to maintain flex/grid layouts inside the report */
+    #printable-report {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        display: block !important;
+        background: white;
+        z-index: 9999;
+    }
+
+    /* Restore flex for inner elements */
+    #printable-report .flex {
+        display: flex !important;
+    }
+
+    #printable-report .grid {
+        display: grid !important;
+    }
+
+    #printable-report .hidden {
+        display: none !important;
+    }
+
+    /* Page Break Rules */
+    .break-inside-avoid {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    .page-break-before {
+        page-break-before: always;
+        break-before: always;
+    }
+
+    /* Hide UI elements */
+    .no-print {
+        display: none !important;
+    }
+
+    /* Adjust text sizes for print */
+    #printable-report h2 {
+        font-size: 18pt !important;
+    }
+
+    #printable-report p {
+        font-size: 10pt !important;
+    }
+
+    #printable-report table {
+        font-size: 9pt !important;
+    }
+
+    /* Ensure shadows/borders are clean */
+    #printable-report .shadow-xl,
+    #printable-report .shadow-lg,
+    #printable-report .shadow-sm {
+        box-shadow: none !important;
+    }
+
+    #printable-report .rounded-3xl,
+    #printable-report .rounded-2xl,
+    #printable-report .rounded-xl {
+        border-radius: 4px !important;
+    }
+}

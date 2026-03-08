@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SIGMAEI – Sistema de Gestão e Monitoramento da Educação Infantil</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @media print {
+      @page {
+        margin: 1cm;
+        size: landscape;
+      }
+
+      /* Ocultar elementos de navegação e botões */
+      .no-print,
+      header,
+      aside,
+      button,
+      select,
+      .hidden-print {
+        display: none !important;
+      }
+
+      /* RESET DE LAYOUT PARA IMPRESSÃO */
+      /* Força os containers de rolagem a expandirem para mostrar todo o conteúdo */
+      html,
+      body,
+      #root {
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        width: 100% !important;
+        position: static !important;
+        background: white !important;
+        font-size: 11pt;
+        /* Tamanho de fonte base para leitura em papel */
+      }
+
+      /* Desfaz o layout flexbox de tela cheia que corta o conteúdo */
+      div.flex.h-screen {
+        display: block !important;
+        height: auto !important;
+        overflow: visible !important;
+      }
+
+      main {
+        display: block !important;
+        height: auto !important;
+        width: 100% !important;
+        overflow: visible !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+
+      /* Container de conteúdo rolável */
+      main>div {
+        height: auto !important;
+        overflow: visible !important;
+        display: block !important;
+      }
+
+      /* Utilitários de Quebra de Página */
+      .print-break-inside-avoid {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+
+      .print-break-before {
+        page-break-before: always;
+      }
+
+      .print-break-after {
+        page-break-after: always;
+      }
+
+      /* Tabelas Inteligentes: Cabeçalho repete em nova página */
+      table {
+        page-break-inside: auto;
+      }
+
+      tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+
+      thead {
+        display: table-header-group;
+      }
+
+      tfoot {
+        display: table-footer-group;
+      }
+
+      /* Forçar Impressão de Cores de Fundo (Gráficos e Tabelas) */
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      /* Remover Sombras para economizar tinta e melhorar clareza */
+      .shadow-sm,
+      .shadow-md,
+      .shadow-lg,
+      .shadow-xl {
+        box-shadow: none !important;
+      }
+
+      /* Bordas mais nítidas para papel */
+      .border-slate-100,
+      .border-slate-200,
+      .border-slate-300 {
+        border-color: #000 !important;
+        border-width: 1px !important;
+      }
+
+      /* Ajustes específicos de Grid/Flex para impressão */
+      .print-stack {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 1rem !important;
+      }
+
+      .print-full-width {
+        width: 100% !important;
+        max-width: none !important;
+      }
+    }
+  </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0",
+    "recharts": "https://aistudiocdn.com/recharts@^3.5.1",
+    "html2canvas": "https://esm.sh/html2canvas@1.4.1"
+  }
+}
+</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;700;800&display=swap"
+    rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Outfit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <link rel="stylesheet" href="/index.css">
+</head>
+
+<body class="bg-slate-50 text-slate-900 font-sans antialiased">
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
+</html>
