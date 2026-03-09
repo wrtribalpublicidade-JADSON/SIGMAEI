@@ -75,7 +75,7 @@ export const ClassDiary: React.FC = () => {
       const newState: { [key: string]: 'P' | 'F' | 'J' } = {};
       classStudents.forEach(s => {
         const record = currentRecords.find(r => r.studentId === s.id);
-        newState[s.id] = record ? record.status : 'P'; // Default Present
+        newState[s.id] = record?.status || 'P'; // Default Present
       });
       setAttendanceState(newState);
     }
@@ -164,15 +164,14 @@ export const ClassDiary: React.FC = () => {
       showNotification('Selecione uma turma para salvar a frequência.', 'error');
       return;
     }
-    const records: AttendanceRecord[] = Object.entries(attendanceState).map(([studentId, status]) => ({
-      id: `${selectedDate}_${studentId}`,
+    const records: Partial<AttendanceRecord>[] = Object.entries(attendanceState).map(([studentId, status]) => ({
       date: selectedDate,
       classId: selectedClassId,
       studentId,
       status: status as 'P' | 'F' | 'J'
     }));
     saveAttendance(records);
-    showNotification('Frequência salva com sucesso!', 'success');
+    // Notification is handled in context or here
   };
 
   const handleSaveRoutine = () => {
@@ -180,8 +179,7 @@ export const ClassDiary: React.FC = () => {
       showNotification('Selecione um estudante para salvar o diário.', 'error');
       return;
     }
-    const log: DailyLog = {
-      id: `${selectedDate}_${selectedStudentId}`, // Unique per student per day
+    const log: Partial<DailyLog> = {
       date: selectedDate,
       classId: selectedClassId,
       studentId: selectedStudentId,
@@ -190,7 +188,7 @@ export const ClassDiary: React.FC = () => {
       skillFieldIds: selectedFields
     };
     saveDailyLog(log);
-    showNotification('Diário individual salvo com sucesso!', 'success');
+    // Notification is handled in context
   };
 
   const handleSaveExperienceLog = () => {
@@ -203,8 +201,7 @@ export const ClassDiary: React.FC = () => {
       return;
     }
 
-    const log: ExperienceLog = {
-      id: `${selectedDate}_${selectedClassId}`,
+    const log: Partial<ExperienceLog> = {
       date: selectedDate,
       classId: selectedClassId,
       fieldId: expFieldId,
@@ -789,8 +786,8 @@ export const ClassDiary: React.FC = () => {
                         key={p}
                         onClick={() => setSelectedPeriod(p as Period)}
                         className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${selectedPeriod === p
-                            ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/50'
-                            : 'text-slate-400 hover:text-indigo-500'
+                          ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/50'
+                          : 'text-slate-400 hover:text-indigo-500'
                           }`}
                       >
                         {p}º Bim
@@ -806,8 +803,8 @@ export const ClassDiary: React.FC = () => {
                       disabled={!selectedStudentId}
                       onClick={() => setReportForm({ ...reportForm, status: 'Rascunho' })}
                       className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all border ${reportForm.status === 'Rascunho'
-                          ? 'bg-slate-200 text-slate-700 border-slate-300'
-                          : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'
+                        ? 'bg-slate-200 text-slate-700 border-slate-300'
+                        : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'
                         } ${!selectedStudentId && 'opacity-50 cursor-not-allowed'}`}
                     >
                       Rascunho
@@ -816,8 +813,8 @@ export const ClassDiary: React.FC = () => {
                       disabled={!selectedStudentId}
                       onClick={() => setReportForm({ ...reportForm, status: 'Finalizado' })}
                       className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all border ${reportForm.status === 'Finalizado'
-                          ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-                          : 'bg-white text-slate-400 border-slate-200 hover:bg-emerald-50 hover:text-emerald-600'
+                        ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                        : 'bg-white text-slate-400 border-slate-200 hover:bg-emerald-50 hover:text-emerald-600'
                         } ${!selectedStudentId && 'opacity-50 cursor-not-allowed'}`}
                     >
                       Finalizado

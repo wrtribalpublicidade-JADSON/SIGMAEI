@@ -12,6 +12,7 @@ export const Assessment: React.FC = () => {
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [selectedPeriod, setSelectedPeriod] = useState<Period>(1);
   const [searchTerm, setSearchTerm] = useState('');
+  const [savingStatus, setSavingStatus] = useState<{ [key: string]: boolean }>({});
 
   // FILTER CLASSES BASED ON ROLE
   const availableClasses = useMemo(() => {
@@ -49,9 +50,16 @@ export const Assessment: React.FC = () => {
     return `${years} anos e ${months} meses`;
   };
 
-  const handleLevelChange = (skillCode: string, level: SkillLevel) => {
+  const handleLevelChange = async (skillCode: string, level: SkillLevel) => {
     if (selectedStudentId) {
-      updateAssessment(selectedStudentId, selectedPeriod, skillCode, level);
+      setSavingStatus(prev => ({ ...prev, [skillCode]: true }));
+      try {
+        await updateAssessment(selectedStudentId, selectedPeriod, skillCode, level);
+      } finally {
+        setTimeout(() => {
+          setSavingStatus(prev => ({ ...prev, [skillCode]: false }));
+        }, 800);
+      }
     }
   };
 
@@ -207,6 +215,11 @@ export const Assessment: React.FC = () => {
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-2">
                                 <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">{skill.code}</span>
+                                {savingStatus[skill.code] && (
+                                  <span className="text-[10px] font-medium text-amber-600 animate-pulse flex items-center gap-1">
+                                    <Save size={10} className="animate-bounce" /> Salvando...
+                                  </span>
+                                )}
                               </div>
                               <p className="text-sm text-slate-600 leading-relaxed max-w-3xl">{skill.description}</p>
                             </div>

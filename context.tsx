@@ -55,11 +55,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [schools, setSchools] = useState<School[]>([]);
   const [classes, setClasses] = useState<ClassRoom[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
-  const [assessments, setAssessments] = useState<AssessmentData>(() => JSON.parse(localStorage.getItem('edu_assessments') || '{}'));
+  const [assessments, setAssessments] = useState<AssessmentData>({});
   const [attendance, setAttendance] = useState<AttendanceRecord[]>(() => JSON.parse(localStorage.getItem('edu_attendance') || '[]'));
   const [dailyLogs, setDailyLogs] = useState<DailyLog[]>(() => JSON.parse(localStorage.getItem('edu_dailylogs') || '[]'));
   const [experienceLogs, setExperienceLogs] = useState<ExperienceLog[]>(() => JSON.parse(localStorage.getItem('edu_experiencelogs') || '[]'));
-  const [descriptiveReports, setDescriptiveReports] = useState<DescriptiveReport[]>(() => JSON.parse(localStorage.getItem('edu_reports') || '[]'));
+  const [descriptiveReports, setDescriptiveReports] = useState<DescriptiveReport[]>([]);
   const [systemUsers, setSystemUsers] = useState<SystemUser[]>(() => {
     const saved = localStorage.getItem('edu_systemusers');
     return saved ? JSON.parse(saved) : [{ id: 'admin-001', name: 'Administrador Principal', role: 'admin', createdAt: new Date().toISOString() }];
@@ -87,12 +87,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [authLoading]);
 
-  // useEffects for purely local data (assessments, attendance, etc. for now)
-  useEffect(() => { localStorage.setItem('edu_assessments', JSON.stringify(assessments)); }, [assessments]);
+  // useEffects for purely local data (attendance, etc. for now)
   useEffect(() => { localStorage.setItem('edu_attendance', JSON.stringify(attendance)); }, [attendance]);
   useEffect(() => { localStorage.setItem('edu_dailylogs', JSON.stringify(dailyLogs)); }, [dailyLogs]);
   useEffect(() => { localStorage.setItem('edu_experiencelogs', JSON.stringify(experienceLogs)); }, [experienceLogs]);
-  useEffect(() => { localStorage.setItem('edu_reports', JSON.stringify(descriptiveReports)); }, [descriptiveReports]);
+  useEffect(() => { localStorage.setItem('edu_experiencelogs', JSON.stringify(experienceLogs)); }, [experienceLogs]);
   useEffect(() => { localStorage.setItem('edu_systemusers', JSON.stringify(systemUsers)); }, [systemUsers]);
 
   // Supabase Auth Integration
@@ -178,13 +177,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (studentsRes.data) setStudents(studentsRes.data.map((s: any) => ({ ...s, classId: s.class_id, birthDate: s.birth_date, listNumber: s.list_number })));
 
       if (attendanceRes.error) console.error('[Data] Error fetching Frequencia:', attendanceRes.error);
-      if (attendanceRes.data) setAttendance(attendanceRes.data.map((a: any) => ({ ...a, studentId: a.student_id, classId: a.class_id })));
+      if (attendanceRes.data) setAttendance(attendanceRes.data.map((a: any) => ({
+        ...a,
+        studentId: a.student_id,
+        classId: a.class_id,
+        status: a.justification === 'Justificado' ? 'J' : (a.present ? 'P' : 'F')
+      })));
 
       if (routineRes.error) console.error('[Data] Error fetching Rotina:', routineRes.error);
       if (routineRes.data) setDailyLogs(routineRes.data.map((r: any) => ({
         ...r,
         classId: r.class_id,
         studentId: r.student_id,
+        routine: r.routine || '',
         pedagogicalRecord: r.pedagogical_record,
         skillFieldIds: r.skill_field_ids || [] // Ensure array
       })));
@@ -680,13 +685,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const saveAttendance = async (records: AttendanceRecord[]) => {
+  const saveAttendance = async (records: Partial<AttendanceRecord>[]) => {
     const originalAttendance = [...attendance];
 
     // 1. Optimistic Update
     setAttendance(prev => {
-      const filtered = prev.filter(r => !records.some(nr => nr.id === r.id));
-      return [...filtered, ...records];
+      const filtered = prev.filter(r => !records.some(nr =>
+        nr.studentId === r.studentId &&
+        nr.classId === r.classId &&
+        nr.date === r.date
+      ));
+      return [...filtered, ...records.map(r => ({ ...r, id: r.id || Date.now().toString() } as AttendanceRecord))];
     });
 
     if (isDemoMode) {
@@ -696,12 +705,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       const { data, error } = await supabase.from('frequencia').upsert(records.map(r => ({
-        id: r.id,
         date: r.date,
         student_id: r.studentId,
         class_id: r.classId,
-        status: r.status
-      }))).select();
+        present: r.status === 'P',
+        justification: r.status === 'J' ? 'Justificado' : null
+      })), { onConflict: 'student_id, class_id, date' }).select();
 
       if (error) throw error;
 
@@ -709,7 +718,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         const mappedData = data.map((a: any) => ({
           ...a,
           studentId: a.student_id,
-          classId: a.class_id
+          classId: a.class_id,
+          status: a.justification === 'Justificado' ? 'J' : (a.present ? 'P' : 'F')
         })) as unknown as AttendanceRecord[];
 
         setAttendance(prev => {
@@ -725,7 +735,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const saveDailyLog = async (log: DailyLog) => {
+  const saveDailyLog = async (log: Partial<DailyLog>) => {
     const originalLogs = [...dailyLogs];
 
     // 1. Optimistic Update
@@ -738,14 +748,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       const { data, error } = await supabase.from('registro_rotina').upsert({
-        id: log.id,
         date: log.date,
         class_id: log.classId,
         student_id: log.studentId,
         routine: log.routine,
         pedagogical_record: log.pedagogicalRecord,
         skill_field_ids: log.skillFieldIds
-      }).select().single();
+      }, { onConflict: 'student_id, class_id, date' }).select().single();
 
       if (error) throw error;
 
@@ -768,11 +777,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const saveExperienceLog = async (log: ExperienceLog) => {
+  const saveExperienceLog = async (log: Partial<ExperienceLog>) => {
     const originalExperienceLogs = [...experienceLogs];
 
     // 1. Optimistic Update
-    setExperienceLogs(prev => [...prev.filter(l => l.id !== log.id), log]);
+    setExperienceLogs(prev => {
+      const filtered = prev.filter(l => !(
+        l.classId === log.classId &&
+        l.date === log.date &&
+        l.fieldId === log.fieldId &&
+        l.skillCode === log.skillCode
+      ));
+      return [...filtered, { ...log, id: log.id || Date.now().toString() } as ExperienceLog];
+    });
 
     if (isDemoMode) {
       showNotification("Experiência salva localmente (Modo Demo).", "info");
@@ -781,7 +798,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       const { data, error } = await supabase.from('registro_experiencia').upsert({
-        id: log.id,
         date: log.date,
         class_id: log.classId,
         field_id: log.fieldId,
@@ -791,7 +807,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         materials: log.materials,
         observations: log.observations,
         photos: log.photos || []
-      }).select().single();
+      }, { onConflict: 'class_id, date, field_id, skill_code' }).select().single();
 
       if (error) throw error;
 
@@ -813,13 +829,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const saveDescriptiveReport = async (report: DescriptiveReport) => {
+  const saveDescriptiveReport = async (report: Partial<DescriptiveReport>) => {
     const originalReports = [...descriptiveReports];
 
     // 1. Optimistic Update
     setDescriptiveReports(prev => {
       const filtered = prev.filter(r => !(r.studentId === report.studentId && r.period === report.period));
-      return [...filtered, { ...report, id: report.id || Date.now().toString() }];
+      return [...filtered, { ...report, id: report.id || Date.now().toString() } as DescriptiveReport];
     });
 
     if (isDemoMode) {
@@ -842,11 +858,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         general_synthesis: report.generalSynthesis
       };
 
-      if (report.id) {
+      // Only include ID if it's a valid UUID (not our temp 'Date.now()' string)
+      if (report.id && report.id.includes('-')) {
         payload.id = report.id;
       }
 
-      const { data, error } = await supabase.from('parecer_descritivo').upsert(payload, { onConflict: 'student_id, period' }).select().single();
+      const { data, error } = await supabase.from('parecer_descritivo')
+        .upsert(payload, { onConflict: 'student_id, period' })
+        .select()
+        .single();
 
       if (error) throw error;
 
