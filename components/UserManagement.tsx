@@ -9,7 +9,7 @@ import { createClient } from '@supabase/supabase-js';
 
 
 export const UserManagement: React.FC = () => {
-    const { showNotification, currentUser, seedDemoData } = useApp();
+    const { showNotification, currentUser, seedDemoData, authLoading } = useApp();
 
     // Access Control: Only Admin can see this page
     if (currentUser?.role !== 'admin') {
@@ -37,18 +37,41 @@ export const UserManagement: React.FC = () => {
 
     const fetchUsers = async () => {
         setLoading(true);
-        const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-        if (error) {
-            showNotification('Erro ao carregar usuários.', 'error');
-        } else {
-            setUsers(data || []);
+
+        if (!supabase) {
+            showNotification('Erro: Cliente Supabase não inicializado.', 'error');
+            setLoading(false);
+            return;
         }
-        setLoading(false);
+
+        try {
+            // Promise for the fetch operation
+            const fetchPromise = supabase.from('profiles').select('*').order('created_at', { ascending: false });
+
+            // Promise for the timeout
+            const timeoutPromise = new Promise<{ data: any, error: any }>((_, reject) =>
+                setTimeout(() => reject(new Error('Timeout ao carregar usuários (15s)')), 15000)
+            );
+
+            const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
+
+            if (error) {
+                showNotification(`Erro ao carregar usuários: ${error.message || error}`, 'error');
+            } else {
+                setUsers(data || []);
+            }
+        } catch (err: any) {
+            showNotification(err.message || 'Erro inesperado ao carregar usuários.', 'error');
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => {
-        fetchUsers();
-    }, []);
+        if (!authLoading) {
+            fetchUsers();
+        }
+    }, [authLoading]);
 
     const handleEdit = (user: any) => {
         setCurrentUserData({ ...user });
